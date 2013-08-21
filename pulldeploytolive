@@ -1,0 +1,163 @@
+#!/bin/bash
+#===================================================================================
+#
+# FILE: pulldeploytolive
+#
+# USAGE: pulldeploytolive -s <dev server> -p project -t <project type> -d <database name> -r docroot -P <database password>
+#
+# DESCRIPTION: This will run on a live server and will pull a new deploy version of
+# a site from a dev server to the live server.  It will pull up the site files, pull
+# up a database dump file and load the database file into a database.
+#
+# OPTIONS: see function ’usage’ below
+# NOTES: ---
+# AUTHOR: Kevin Bailey, kbailey@freewayprojects.com
+# COMPANY: Freeway Projects Limited
+#===================================================================================
+
+# -------------------------------------------------------------------------------------------------
+# Set up global variables.
+#
+# We are going to explicitly set the script name variable.  Obviously the script name is available
+# as $0 - but this is not consistent and may or may not contain the path.  Also, this means we can
+# use the bash debugger without needing to handle the fact that $0 would contain something like
+# 'bashdb'.
+# -------------------------------------------------------------------------------------------------
+SCRIPT_NAME=pulldeploytolive
+DATE_TIME=$(date +%Y%m%d-%H%M%S)
+
+# -------------------------------------------------------------------------------------------------
+# Local functions
+#
+# Here we will define all the functions used by this script.
+# -------------------------------------------------------------------------------------------------
+
+# Output a usage message - used when the parameters input are not correct.
+usage () {
+  echo "Usage: $SCRIPT_NAME -s <dev server> -p project -t <project type> -d <database name> -u <database user> -r docroot -P <database password>"
+}
+
+# -------------------------------------------------------------------------------------------------
+# Testing parameters
+# -------------------------------------------------------------------------------------------------
+while getopts ":s:p:t:d:u:r:P:" opt; do
+  case $opt in
+    s)
+      DEV_SERVER=$OPTARG
+      ;;
+    p)
+      PROJECT_NAME=$OPTARG
+      ;;
+    t)
+      PROJECT_TYPE=$OPTARG
+      ;;
+    d)
+      DATABASE_NAME=$OPTARG
+      ;;
+    u)
+      DATABASE_USER=$OPTARG
+      ;;
+    P)
+      DATABASE_PASSWORD=$OPTARG
+      ;;
+    r)
+      DOCUMENT_ROOT=$OPTARG
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      usage
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+# Check all parameters have had values assigned.
+if [ -z $DEV_SERVER ] || [ -z $PROJECT_NAME ] || [ -z $PROJECT_TYPE ] || [ -z $DATABASE_NAME ] || [ -z $DATABASE_USER ] || [ -z $DOCUMENT_ROOT ] || [ -z $DATABASE_PASSWORD ]
+then
+    echo "All parameters need to have values set."
+    usage
+    exit 1
+fi
+
+# Check that the project type is valid.
+if [ ${PROJECT_TYPE} != "drupal7" ] && [ ${PROJECT_TYPE} != "drupal6" ] 
+then
+    echo "The currently supported project types are 'drupal7' and drupal6."
+    exit 1
+fi
+
+echo "All tests completed OK."
+echo
+echo "Dev server: ${DEV_SERVER}"
+echo "Project name: ${PROJECT_NAME}"
+echo "Project type: ${PROJECT_TYPE}"
+echo "Database name: ${DATABASE_NAME}"
+echo "Database user: ${DATABASE_USER}"
+echo "Document root: ${DOCUMENT_ROOT}"
+
+# -------------------------------------------------------------------------------------------------
+echo
+echo `date`
+echo "Pulling the database dump file up to the live server..."
+# -------------------------------------------------------------------------------------------------
+rsync -avnz --delete deploy@${DEV_SERVER}:/home/deploy/projects/${PROJECT_NAME}/db /home/${USER}
+
+# -------------------------------------------------------------------------------------------------
+echo
+echo `date`
+echo "Loading the database dump into the database..."
+# -------------------------------------------------------------------------------------------------
+mysql --user=${DATABASE_USER} -p ${DATABASE_NAME} < /home/$USER}/db/database_dump.sql
+
+# -------------------------------------------------------------------------------------------------
+echo
+echo `date`
+echo "Pulling the site files up to the live server..."
+# -------------------------------------------------------------------------------------------------
+rsync -avnz --delete deploy@${DEV_SERVER}:/home/deploy/projects/${PROJECT_NAME}/web ${DOCUMENT_ROOT}
+
+echo "NB - YOU MUST CHANGE THE DATABASE CONNECTION SETTINGS IN settings.php"
+
+echo "Creating and updating the settings file..."
+case "${PROJECT_TYPE}" in
+
+    drupal7)
+
+	cat <<EOFSETTINGS >> ${DOCUMENT_ROOT}/sites/default/settings.php
+
+\$databases = array (
+  'default' => 
+  array (
+    'default' => 
+    array (
+      'database' => '${DATABASE_NAME}',
+      'username' => '${DATABASE_USER}',
+      'password' => '${DATABASE_PASSWORD}',
+      'host' => 'localhost',
+      'port' => '',
+      'driver' => 'mysql',
+      'prefix' => '',
+    ),
+  ),
+);
+
+EOFSETTINGS
+
+	;;
+
+    drupal6)
+
+	echo "\$db_url = 'mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost/${DATABASE_NAME}';" >> ${DOCUMENT_ROOT}/sites/default/settings.php
+	;;
+
+    *)
+        echo "Error - Invalid project type."
+        exit -1
+esac
+
+exit 0
