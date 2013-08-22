@@ -28,3 +28,21 @@ Before this script is run website space and a database will need to have been cr
 * Create vhost.
 * Set up test URL to point to the new site for testing.
 * Make sure the account on the live server can log in to the dev server over SSH.
+
+# Set up
+
+Basically the scripts should be installed on the live server and made available to the standard accounts.
+
+They can be pulled down from Github with:
+
+    # cd /usr/local/share
+    # git clone https://github.com/freewayprojects/pullpushlive.git
+
+Then they can be made available to standard users with:
+
+    # ln -s /usr/local/share/pullpushlive/pushlivetolivecopy /usr/local/bin/pushlivetolivecopy
+    # ln -s /usr/local/share/pullpush/pulldeploytolive /usr/local/bin/pulldeploytolive
+    # chmod 755 /usr/local/share/pullpushlive/pushlivetolivecopy
+    # chmod 755 /usr/local/share/pullpush/pulldeploytolive
+
+The idea is that to be safe the scripts are run under the local user account to limit any damage which might caused.
