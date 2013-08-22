@@ -77,7 +77,7 @@ while getopts ":s:p:t:d:u:r:P:" opt; do
 done
 
 # Check all parameters have had values assigned.
-if [ -z $DEV_SERVER ] || [ -z $PROJECT_NAME ] || [ -z $PROJECT_TYPE ] || [ -z $DATABASE_NAME ] || [ -z $DATABASE_USER ] || [ -z $DOCUMENT_ROOT ] || [ -z $DATABASE_PASSWORD ]
+if [ -z $DEV_SERVER ] || [ -z $PROJECT_NAME ] || [ -z $PROJECT_TYPE ] || [ -z $DATABASE_NAME ] || [ -z $DATABASE_USER ] || [ -z $DATABASE_PASSWORD ] || [ -z $DOCUMENT_ROOT ]
 then
     echo "All parameters need to have values set."
     usage
@@ -98,6 +98,7 @@ echo "Project name: ${PROJECT_NAME}"
 echo "Project type: ${PROJECT_TYPE}"
 echo "Database name: ${DATABASE_NAME}"
 echo "Database user: ${DATABASE_USER}"
+echo "Database password: ${DATABASE_PASSWORD}"
 echo "Document root: ${DOCUMENT_ROOT}"
 
 # -------------------------------------------------------------------------------------------------
@@ -112,7 +113,7 @@ echo
 echo `date`
 echo "Loading the database dump into the database..."
 # -------------------------------------------------------------------------------------------------
-mysql --user=${DATABASE_USER} -p ${DATABASE_NAME} < /home/$USER}/db/database_dump.sql
+mysql --user=${DATABASE_USER} --password=${DATABASE_PASSWORD} ${DATABASE_NAME} < /home/${USER}/db/database_dump.sql
 
 # -------------------------------------------------------------------------------------------------
 echo
@@ -120,8 +121,6 @@ echo `date`
 echo "Pulling the site files up to the live server..."
 # -------------------------------------------------------------------------------------------------
 rsync -avnz --delete deploy@${DEV_SERVER}:/home/deploy/projects/${PROJECT_NAME}/web ${DOCUMENT_ROOT}
-
-echo "NB - YOU MUST CHANGE THE DATABASE CONNECTION SETTINGS IN settings.php"
 
 echo "Creating and updating the settings file..."
 case "${PROJECT_TYPE}" in
@@ -159,5 +158,11 @@ EOFSETTINGS
         echo "Error - Invalid project type."
         exit -1
 esac
+
+# -------------------------------------------------------------------------------------------------
+echo
+echo `date`
+echo "Finished."
+# -------------------------------------------------------------------------------------------------
 
 exit 0
