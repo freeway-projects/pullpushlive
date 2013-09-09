@@ -14,7 +14,7 @@ The idea is that all parts of the deployment process can be scripted and fully t
 
 Before this script is run the website should be put into a sort of 'read-only' state.  How this is carried out will vary from site to site.
 
-Once the site has completed the merging processes should be run on the development server.
+Once this script has finished running the merging processes should be run on the development server.
 
 ## pulldeploytolive
 
@@ -45,4 +45,4 @@ Then they can be made available to standard users with:
     # chmod 755 /usr/local/share/pullpushlive/pushlivetolivecopy
     # chmod 755 /usr/local/share/pullpush/pulldeploytolive
 
-The idea is that to be safe the scripts are run under the local user account to limit any damage which might caused.
+It is a good idea to run the scripts under the website local user account to ensure that this script can only affect files in the new site.
