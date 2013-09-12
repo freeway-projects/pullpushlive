@@ -105,13 +105,6 @@ echo "Document root: ${DOCUMENT_ROOT}"
 # -------------------------------------------------------------------------------------------------
 echo
 echo `date`
-echo "Pulling the database dump file up to the live server..."
-# -------------------------------------------------------------------------------------------------
-rsync -avnz --delete deploy@${DEV_SERVER}:/home/deploy/projects/${PROJECT_NAME}/db /home/${USER}
-
-# -------------------------------------------------------------------------------------------------
-echo
-echo `date`
 echo "Dump out a copy of the database..."
 # -------------------------------------------------------------------------------------------------
 mkdir -p ${DOCUMENT_ROOT}/db
