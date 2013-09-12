@@ -36,7 +36,7 @@ DATE_TIME=$(date +%Y%m%d-%H%M%S)
 
 # Output a usage message - used when the parameters input are not correct.
 usage () {
-  echo "Usage: $SCRIPT_NAME -s <dev server> -p project -t <project type> -d <database name> -u <database user> -r docroot -P <database password>"
+  echo "Usage: $SCRIPT_NAME -s <dev server> -p project -t <project type> -d <database name> -u <database user> -r docroot -P <database password> -a <database_dump_directory>"
 }
 
 # -------------------------------------------------------------------------------------------------
@@ -64,6 +64,9 @@ while getopts ":s:p:t:d:u:r:P:" opt; do
       ;;
     r)
       DOCUMENT_ROOT=$OPTARG
+      ;;
+    a)
+      DATABASE_DUMP_DIRECTORY=$OPTARG
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -101,14 +104,15 @@ echo "Project type: ${PROJECT_TYPE}"
 echo "Database name: ${DATABASE_NAME}"
 echo "Database user: ${DATABASE_USER}"
 echo "Document root: ${DOCUMENT_ROOT}"
+echo "Database dump directory: ${DATABASE_DUMP_DIRECTORY}"
 
 # -------------------------------------------------------------------------------------------------
 echo
 echo `date`
 echo "Dump out a copy of the database..."
 # -------------------------------------------------------------------------------------------------
-mkdir -p ${DOCUMENT_ROOT}/db
-mysqldump --user=${DATABASE_USER} --password=${DATABASE_PASSWORD} ${DATABASE_NAME} > ${DOCUMENT_ROOT}/db/database_dump.sql
+mkdir -p ${DATABASE_DUMP_DIRECTORY}
+mysqldump --user=${DATABASE_USER} --password=${DATABASE_PASSWORD} ${DATABASE_NAME} > ${DATABASE_DUMP_DIRECTORY}/database_dump.sql
 
 # -------------------------------------------------------------------------------------------------
 echo
@@ -116,7 +120,7 @@ echo `date`
 echo "Push the database dump to the dev server..."
 # -------------------------------------------------------------------------------------------------
 ssh livecopy@${DEV_SERVER} mkdir -p /home/livecopy/projects/${PROJECT_NAME}/db
-rsync -avnz ${DOCUMENT_ROOT}/db/database_dump.sql livecopy@${DEV_SERVER}:/home/livecopy/projects/${PROJECT_NAME}/db 
+rsync -avnz ${DATABASE_DUMP_DIRECTORY}/database_dump.sql livecopy@${DEV_SERVER}:/home/livecopy/projects/${PROJECT_NAME}/db
 
 # -------------------------------------------------------------------------------------------------
 echo
