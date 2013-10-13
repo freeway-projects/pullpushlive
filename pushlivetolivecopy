@@ -120,7 +120,7 @@ echo `date`
 echo "Push the database dump to the dev server..."
 # -------------------------------------------------------------------------------------------------
 ssh livecopy@${DEV_SERVER} mkdir -p /home/livecopy/projects/${PROJECT_NAME}/db
-rsync -avnz ${DATABASE_DUMP_DIRECTORY}/database_dump.sql livecopy@${DEV_SERVER}:/home/livecopy/projects/${PROJECT_NAME}/db
+rsync -avz ${DATABASE_DUMP_DIRECTORY}/database_dump.sql livecopy@${DEV_SERVER}:/home/livecopy/projects/${PROJECT_NAME}/db
 
 # -------------------------------------------------------------------------------------------------
 echo
@@ -128,7 +128,7 @@ echo `date`
 echo "Push the live site files down to the dev server..."
 # -------------------------------------------------------------------------------------------------
 ssh livecopy@${DEV_SERVER} mkdir -p /home/livecopy/projects/${PROJECT_NAME}/web
-rsync -avnz ${DOCUMENT_ROOT}/ livecopy@${DEV_SERVER}:/home/livecopy/projects/${PROJECT_NAME}/web 
+rsync -avz ${DOCUMENT_ROOT}/ livecopy@${DEV_SERVER}:/home/livecopy/projects/${PROJECT_NAME}/web 
 
 # -------------------------------------------------------------------------------------------------
 echo
