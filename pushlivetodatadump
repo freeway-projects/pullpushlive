@@ -1,0 +1,139 @@
+#!/bin/bash
+#===================================================================================
+#
+# FILE: pushlivetodeploy
+#
+# USAGE: pushlivetodeploy -s <dev server> -p project -t <project type> -d <database name> -r docroot -P <database password>
+#
+# DESCRIPTION: This will run on a live server and it will push a copy of a live site to a dev
+# server.  The idea is that before this is run the site will be put into 'read-only' mode, then
+# the copy is sent to the dev server.  On the dev server the site is upgraded and then a new
+# site called deploy is created - this is then pulled up to the live server using the script
+# pulldeploytolive and becomes the new live site.
+#
+# OPTIONS: see function ’usage’ below
+# NOTES: ---
+# AUTHOR: Kevin Bailey, kbailey@freewayprojects.com
+# COMPANY: Freeway Projects Limited
+#===================================================================================
+
+# -------------------------------------------------------------------------------------------------
+# Set up global variables.
+#
+# We are going to explicitly set the script name variable.  Obviously the script name is available
+# as $0 - but this is not consistent and may or may not contain the path.  Also, this means we can
+# use the bash debugger without needing to handle the fact that $0 would contain something like
+# 'bashdb'.
+# -------------------------------------------------------------------------------------------------
+SCRIPT_NAME=pushlivetodeploy
+DATE_TIME=$(date +%Y%m%d-%H%M%S)
+
+# -------------------------------------------------------------------------------------------------
+# Local functions
+#
+# Here we will define all the functions used by this script.
+# -------------------------------------------------------------------------------------------------
+
+# Output a usage message - used when the parameters input are not correct.
+usage () {
+  echo "Usage: $SCRIPT_NAME -s <dev server> -p project -t <project type> -d <database name> -u <database user> -r docroot -P <database password> -a <database_dump_directory>"
+}
+
+# -------------------------------------------------------------------------------------------------
+# Testing parameters
+# -------------------------------------------------------------------------------------------------
+while getopts ":s:p:t:d:u:r:P:" opt; do
+  case $opt in
+    s)
+      DEV_SERVER=$OPTARG
+      ;;
+    p)
+      PROJECT_NAME=$OPTARG
+      ;;
+    t)
+      PROJECT_TYPE=$OPTARG
+      ;;
+    d)
+      DATABASE_NAME=$OPTARG
+      ;;
+    u)
+      DATABASE_USER=$OPTARG
+      ;;
+    P)
+      DATABASE_PASSWORD=$OPTARG
+      ;;
+    r)
+      DOCUMENT_ROOT=$OPTARG
+      ;;
+    a)
+      DATABASE_DUMP_DIRECTORY=$OPTARG
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      usage
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+# Check all parameters have had values assigned.
+if [ -z $DEV_SERVER ] || [ -z $PROJECT_NAME ] || [ -z $PROJECT_TYPE ] || [ -z $DATABASE_NAME ] || [ -z $DATABASE_USER ] || [ -z $DOCUMENT_ROOT ] || [ -z $DATABASE_PASSWORD ]
+then
+    echo "All parameters need to have values set."
+    usage
+    exit 1
+fi
+
+# Check that the project type is valid.
+if [ ${PROJECT_TYPE} != "drupal7" ] && [ ${PROJECT_TYPE} != "drupal6" ] 
+then
+    echo "The currently supported project types are 'drupal7' and drupal6."
+    exit 1
+fi
+
+echo "All tests completed OK."
+echo
+echo "Dev server: ${DEV_SERVER}"
+echo "Project name: ${PROJECT_NAME}"
+echo "Project type: ${PROJECT_TYPE}"
+echo "Database name: ${DATABASE_NAME}"
+echo "Database user: ${DATABASE_USER}"
+echo "Document root: ${DOCUMENT_ROOT}"
+echo "Database dump directory: ${DATABASE_DUMP_DIRECTORY}"
+
+# -------------------------------------------------------------------------------------------------
+echo
+echo `date`
+echo "Dump out a copy of the database..."
+# -------------------------------------------------------------------------------------------------
+mkdir -p ${DATABASE_DUMP_DIRECTORY}
+mysqldump --user=${DATABASE_USER} --password=${DATABASE_PASSWORD} ${DATABASE_NAME} > ${DATABASE_DUMP_DIRECTORY}/database_dump.sql
+
+# -------------------------------------------------------------------------------------------------
+echo
+echo `date`
+echo "Push the database dump to the dev server..."
+# -------------------------------------------------------------------------------------------------
+ssh livecopy@${DEV_SERVER} mkdir -p /home/livecopy/projects/${PROJECT_NAME}/db
+rsync -avz ${DATABASE_DUMP_DIRECTORY}/database_dump.sql livecopy@${DEV_SERVER}:/home/livecopy/projects/${PROJECT_NAME}/db
+
+# -------------------------------------------------------------------------------------------------
+echo
+echo `date`
+echo "Push the live site files down to the dev server..."
+# -------------------------------------------------------------------------------------------------
+ssh livecopy@${DEV_SERVER} mkdir -p /home/livecopy/projects/${PROJECT_NAME}/web
+rsync -avz ${DOCUMENT_ROOT}/ livecopy@${DEV_SERVER}:/home/livecopy/projects/${PROJECT_NAME}/web 
+
+# -------------------------------------------------------------------------------------------------
+echo
+echo `date`
+echo "Finished."
+# -------------------------------------------------------------------------------------------------
+
+exit 0
