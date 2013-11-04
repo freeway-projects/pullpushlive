@@ -106,7 +106,7 @@ echo
 echo `date`
 echo "Pulling the database dump file up to the live server..."
 # -------------------------------------------------------------------------------------------------
-rsync -avnz --delete deploy@${DEV_SERVER}:/home/deploy/projects/${PROJECT_NAME}/db /home/${USER}
+rsync -avz --delete deploy@${DEV_SERVER}:/home/deploy/projects/${PROJECT_NAME}/db /home/${USER}
 
 # -------------------------------------------------------------------------------------------------
 echo
@@ -120,7 +120,7 @@ echo
 echo `date`
 echo "Pulling the site files up to the live server..."
 # -------------------------------------------------------------------------------------------------
-rsync -avnz --delete deploy@${DEV_SERVER}:/home/deploy/projects/${PROJECT_NAME}/web ${DOCUMENT_ROOT}
+rsync -avz --delete deploy@${DEV_SERVER}:/home/deploy/projects/${PROJECT_NAME}/web ${DOCUMENT_ROOT}
 
 echo "Creating and updating the settings file..."
 case "${PROJECT_TYPE}" in
